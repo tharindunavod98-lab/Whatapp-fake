@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#20251b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Relay</title><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Tokens: light default, dark (high-contrast field-radio) via system setting */
+:root{--bg:#eceadb;--ink:#1d2218;--panel:#fffdf2;--line:#c9c5ad;--amber:#d98e00;--tx:#c8321f;--mine:#dfe6c8;--mute:#5d634f;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#20251b;--ink:#f1ecd8;--panel:#2a3023;--line:#46503a;--amber:#f2a516;--tx:#ff5a45;--mine:#3b472a;--mute:#aeb494;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#20251b;--ink:#f1ecd8;--panel:#2a3023;--line:#46503a;--amber:#f2a516;--tx:#ff5a45;--mine:#3b472a;--mute:#aeb494;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+.disp{font-family:"Bahnschrift","Arial Narrow","Roboto Condensed",sans-serif;letter-spacing:.03em}
+header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+header h1{margin:0;font-size:22px;flex:1}
+#st{font-size:13px;color:var(--mute)} #st.ok{color:var(--amber)} #st.bad{color:var(--tx)}
+.led{width:10px;height:10px;border-radius:50%;background:var(--line);transition:background .1s}.led.on{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+#gpsc{font-size:13px;padding:2px 10px;border:1px solid var(--line);border-radius:99px;display:none}
+#list{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;overscroll-behavior-y:contain}
+#ptr{text-align:center;font-size:13px;color:var(--mute);height:0;overflow:hidden}
+.msg{max-width:82%;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--panel);border:1px solid var(--line);touch-action:pan-y;position:relative}
+.msg.me{align-self:flex-end;background:var(--mine);border-radius:14px 14px 4px 14px}
+.msg b{display:block;font-size:12px;color:var(--mute);font-weight:600}
+.msg p{margin:2px 0 0;white-space:pre-wrap;word-break:break-word}
+.msg q{display:block;border-left:3px solid var(--amber);padding-left:8px;margin:4px 0;color:var(--mute);font-size:13px;quotes:none}
+.msg img{max-width:100%;border-radius:8px;display:block;margin-top:4px}.msg audio{height:34px;max-width:100%;margin-top:4px}
+#menu{position:fixed;display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:9;box-shadow:0 8px 24px #0006}
+#menu button{display:block;width:140px;padding:12px 16px;border:0;background:none;color:var(--ink);font:inherit;text-align:left}
+#menu button:active{background:var(--line)}
+#dock{border-top:1px solid var(--line);padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px;align-items:center}
+#rb{display:none;width:100%;font-size:13px;color:var(--mute);justify-content:space-between}
+#row{display:flex;gap:8px;width:100%}
+#row input{flex:1;min-width:0;padding:11px 14px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;-webkit-user-select:text;user-select:text}
+.ib{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:18px}.ib.on{background:var(--amber);color:#1d2218}
+.ptt{width:104px;height:104px;border-radius:50%;border:0;background:var(--amber);color:#1d2218;font:700 15px "Bahnschrift","Arial Narrow",sans-serif;touch-action:none;position:relative;transition:transform .08s,background .15s;box-shadow:0 0 0 calc(4px + var(--lvl,0)*22px) color-mix(in srgb,var(--amber) 30%,transparent)}
+.ptt.on{background:var(--tx);color:#fff;transform:scale(.94);box-shadow:0 0 0 calc(4px + var(--lvl,0)*22px) color-mix(in srgb,var(--tx) 35%,transparent)}
+.ptt.on::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--tx);animation:rip 1s ease-out infinite}
+@keyframes rip{to{transform:scale(1.7);opacity:0}}
+@media(prefers-reduced-motion:reduce){.ptt.on::after{animation:none}}
+#setup{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:24px;max-width:460px;margin:auto}
+#setup h2{font-size:34px;margin:0}#setup p{margin:0;color:var(--mute)}
+#setup input{padding:14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;-webkit-user-select:text;user-select:text}
+#go{padding:15px;border:0;border-radius:10px;background:var(--amber);color:#1d2218;font:700 17px "Bahnschrift","Arial Narrow",sans-serif}
+details{color:var(--mute);font-size:14px}details input{width:100%;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
+</style></head><body>
+<section id="setup">
+  <h2 class="disp">Relay</h2>
+  <p>Encrypted push-to-talk, chat, photos and location. Messages are sealed on this device. The relay only sees ciphertext.</p>
+  <input id="call" placeholder="Your callsign" autocomplete="off">
+  <input id="room" placeholder="Channel name" autocomplete="off">
+  <input id="pass" type="password" placeholder="Shared passphrase (6+ characters)">
+  <details><summary>Cloud relay (Supabase Realtime)</summary><input id="surl" placeholder="https://xyz.supabase.co"><input id="skey" placeholder="anon public key"></details>
+  <button id="go">Join channel</button>
+</section>
+<header><h1 class="disp">Relay</h1><span id="gpsc"></span><button class="ib" id="inv" aria-label="Copy invite link" style="width:36px;height:36px;font-size:15px">🔗</button><span class="led" id="rx" title="Receiving"></span></header>
+<div id="st" style="padding:4px 14px">Not connected</div>
+<div id="ptr">Pull to rotate session keys</div>
+<main id="list"></main>
+<div id="menu"><button data-a="re">Reply</button><button data-a="cp">Copy</button><button data-a="del">Delete</button></div>
+<footer id="dock">
+  <div id="rb"><span id="rt"></span><button id="rx2" style="background:none;border:0;color:var(--ink)">Cancel</button></div>
+  <div id="row"><button class="ib" id="att" aria-label="Send photo">+</button><button class="ib" id="gps" aria-label="Share location">⌖</button>
+    <input id="txt" placeholder="Message" autocomplete="off"><button class="ib" id="send" aria-label="Send">↑</button></div>
+  <button class="ptt" id="ptt" aria-label="Push to talk"><span id="lab">Hold to talk</span></button>
+  <input type="file" id="file" accept="image/*" hidden>
+</footer>
+<div id="toast"></div>
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s),el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e};
+const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch{}};            // Haptics: no-op where unsupported (iOS Safari)
+const b64=u=>{let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const enc=new TextEncoder(),dec=new TextDecoder(),rnd=()=>b64(crypto.getRandomValues(new Uint8Array(6)));
+let tt;const toast=m=>{const t=$("#toast");t.textContent=m;t.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>t.style.opacity=0,2600)};
+const S={key:null,peer:null,pair:null,psk:null,mine:null,name:"Unit",re:null};   // session state; keys are non-extractable CryptoKeys
+let T=null;                                                                       // transport adapter {send,on}
+
+/* ---------- 1. CRYPTO: PBKDF2 trust bond -> authenticated ECDH -> AES-GCM-256 ---------- */
+const C={
+  // Passphrase is stretched (PBKDF2-SHA256, 310k iters, channel-salted) into an HMAC key.
+  // It never encrypts payloads; it only authenticates the ECDH handshake so a relay can't MITM it.
+  async psk(pass,room){const b=await crypto.subtle.importKey("raw",enc.encode(pass),"PBKDF2",false,["deriveKey"]);
+    return crypto.subtle.deriveKey({name:"PBKDF2",salt:enc.encode("relay:"+room),iterations:310000,hash:"SHA-256"},b,{name:"HMAC",hash:"SHA-256",length:256},false,["sign","verify"])},
+  newPair:()=>crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},false,["deriveKey"]),   // private key never leaves WebCrypto
+  async pubRaw(k){return new Uint8Array(await crypto.subtle.exportKey("raw",k))},
+  async session(priv,raw){const pub=await crypto.subtle.importKey("raw",raw,{name:"ECDH",namedCurve:"P-256"},false,[]);
+    return crypto.subtle.deriveKey({name:"ECDH",public:pub},priv,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])},
+  // Fresh random 96-bit IV per payload; GCM tag authenticates ciphertext. The relay sees only {iv,ct}.
+  async seal(k,o){const iv=crypto.getRandomValues(new Uint8Array(12));
+    return{iv:b64(iv),ct:b64(new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},k,enc.encode(JSON.stringify(o)))))}},
+  async open(k,m){return JSON.parse(dec.decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(m.iv)},k,unb64(m.ct))))}
+};
+// Safety code: both users should see the same 8 hex chars (compare out loud to detect a compromised passphrase).
+async function safety(peerB64){const d=await crypto.subtle.digest("SHA-256",enc.encode([S.mine,peerB64].sort().join("")));
+  return[...new Uint8Array(d).slice(0,4)].map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase().replace(/(....)(....)/,"$1 $2")}
+async function sendHello(ask){const pub=await C.pubRaw(S.pair.publicKey);
+  T.send({t:"hello",ask,pub:b64(pub),mac:b64(new Uint8Array(await crypto.subtle.sign("HMAC",S.psk,pub)))})}
+async function onHello(m){const pub=unb64(m.pub);
+  if(!await crypto.subtle.verify("HMAC",S.psk,unb64(m.mac),pub)){status("Peer passphrase doesn’t match","bad");return}
+  S.peer=m.pub;S.key=await C.session(S.pair.privateKey,pub);
+  status("Linked · safety code "+await safety(m.pub),"ok");vib(20);
+  if(m.ask)sendHello(false)}                       // reply once; replies carry ask:false so there is no loop
+const status=(t,c="")=>{const s=$("#st");s.textContent=t;s.className=c};
+async function tx(p){if(!S.key){toast("Waiting for a verified peer");return false}T.send({t:"m",...await C.seal(S.key,p)});return true}
+
+/* ---------- transports: same-browser demo + Supabase Realtime broadcast (ciphertext only) ---------- */
+// Channel name is hashed before it reaches any relay, so the server never sees the plain name
+async function topic(room){const d=await crypto.subtle.digest("SHA-256",enc.encode("relay:"+room));return[...new Uint8Array(d).slice(0,8)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function bcast(room){const ch=new BroadcastChannel("relay-"+room);return{send:o=>ch.postMessage(o),on:f=>ch.onmessage=e=>f(e.data)}}
+async function supa(url,key,room){
+  await new Promise((r,j)=>{const s=el("script");s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";s.onload=r;s.onerror=j;document.head.append(s)});
+  let cb=()=>{};const ch=supabase.createClient(url,key).channel("relay-"+room,{config:{broadcast:{self:false}}});
+  ch.on("broadcast",{event:"m"},p=>cb(p.payload));
+  // Wait until the socket is really subscribed; the first hello used to be lost when sent too early
+  await new Promise((res,rej)=>{ch.subscribe(s=>{if(s==="SUBSCRIBED")res();else if(s==="CHANNEL_ERROR"||s==="TIMED_OUT")rej(new Error("Relay refused the connection. Check the URL and anon key."))})});
+  return{send:o=>ch.send({type:"broadcast",event:"m",payload:o}),on:f=>cb=f}}
+
+/* ---------- 2. AUDIO: synthesized cues (no asset files) ---------- */
+const A={ctx:null,init(){this.ctx=this.ctx||new(window.AudioContext||window.webkitAudioContext)();if(this.ctx.state==="suspended")this.ctx.resume()},
+  tone(f,at,d,v=.12,type="sine"){const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime+at;o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+.02)},
+  squelch(){const c=this.ctx,n=c.sampleRate*.2,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);   // decaying white noise through a falling band-pass = analog squelch
+    for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();
+    s.buffer=b;f.type="bandpass";f.Q.value=1.2;f.frequency.setValueAtTime(3200,c.currentTime);f.frequency.exponentialRampToValueAtTime(900,c.currentTime+.2);g.gain.value=.18;s.connect(f).connect(g).connect(c.destination);s.start()},
+  click(){this.tone(1800,0,.025,.2,"square")},
+  roger(){this.tone(1320,0,.09);this.tone(990,.11,.12)}};
+
+/* ---------- PTT engine: MediaRecorder Opus in 250 ms encrypted slices + VAD meter ---------- */
+const ptt=$("#ptt"),lab=$("#lab");
+const P={want:false,locked:false,rec:null,st:null,
+  async start(){
+    if(!S.key)return toast("Waiting for a verified peer");
+    this.want=true;A.init();vib(20);A.click();A.squelch();
+    let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{noiseSuppression:true,echoCancellation:true,autoGainControl:true,channelCount:1}})}
+    catch{this.want=false;return toast("Microphone unavailable. Allow access and try again.")}
+    if(!this.want){st.getTracks().forEach(t=>t.stop());return}       // finger lifted while permission/stream was opening
+    const mime=["audio/webm;codecs=opus","audio/mp4","audio/webm"].find(m=>MediaRecorder.isTypeSupported(m)),sid=rnd();let n=0;
+    this.st=st;const r=this.rec=new MediaRecorder(st,{mimeType:mime,audioBitsPerSecond:24000});   // 24 kbps voice-grade Opus
+    r.ondataavailable=async e=>{if(!e.data.size)return;const k=n++;tx({k:"a",sid,n:k,mime,d:b64(new Uint8Array(await e.data.arrayBuffer()))})};  // encrypt + send each slice immediately
+    r.onstop=()=>tx({k:"ae",sid,n});                                 // end marker tells receiver the chunk count
+    r.start(250);ptt.classList.add("on");lab.textContent="Talking";
+    // Voice Activity Detection: RMS of the live mic drives the glow; 10 s of silence auto-releases a locked channel
+    const an=A.ctx.createAnalyser();an.fftSize=512;A.ctx.createMediaStreamSource(st).connect(an);const buf=new Uint8Array(512);let quiet=0;
+    const loop=()=>{if(this.rec!==r)return;an.getByteTimeDomainData(buf);let s=0;for(const v of buf)s+=((v-128)/128)**2;const rms=Math.sqrt(s/512);
+      ptt.style.setProperty("--lvl",Math.min(1,rms*6));quiet=rms<.02?quiet+1:0;if(this.locked&&quiet>600)this.stop();requestAnimationFrame(loop)};loop()},
+  stop(){const had=this.rec;this.want=false;this.locked=false;
+    if(had&&had.state!=="inactive")had.stop();if(this.st)this.st.getTracks().forEach(t=>t.stop());this.rec=this.st=null;
+    ptt.classList.remove("on","lock");ptt.style.removeProperty("--lvl");lab.textContent="Hold to talk";
+    if(had){A.roger();vib([15,40,15]);bubble({me:true,who:"You",body:"Voice transmission sent"})}}};
+let t0=0,y0=0,down=false;
+const lock=()=>{if(!P.want)return;P.locked=true;vib([30,30,30]);lab.textContent="Locked · tap to end"};
+ptt.addEventListener("pointerdown",e=>{ptt.setPointerCapture(e.pointerId);if(P.locked){P.stop();down=false;return}down=true;t0=performance.now();y0=e.clientY;P.start()});
+ptt.addEventListener("pointermove",e=>{if(down&&!P.locked&&y0-e.clientY>60)lock()});      // swipe up = lock
+const rel=()=>{if(!down)return;down=false;if(P.locked)return;if(performance.now()-t0<250)lock();else P.stop()};  // quick tap = lock, hold = release to send
+ptt.addEventListener("pointerup",rel);ptt.addEventListener("pointercancel",rel);ptt.addEventListener("contextmenu",e=>e.preventDefault());
+
+/* ---------- 3. Messages, gestures ---------- */
+const list=$("#list");
+function bubble({me,who,body,re}){const m=el("div","msg"+(me?" me":""));m.append(el("b","",who));if(re)m.append(el("q","",re));
+  m.append(body instanceof Node?body:el("p","",body));m.dataset.txt=typeof body==="string"?body:"";m.dataset.who=who;list.append(m);list.scrollTop=list.scrollHeight;return m}
+function setReply(m){S.re={who:m.dataset.who,text:m.dataset.txt||"Media"};$("#rt").textContent="Replying to "+S.re.who;$("#rb").style.display="flex";$("#txt").focus()}
+$("#rx2").onclick=()=>{S.re=null;$("#rb").style.display="none"};
+// Swipe-right to reply, long-press for menu (one delegated pointer handler; springy release)
+let tgt,sx,sy,dx,lp,sw;const menu=$("#menu");
+list.addEventListener("pointerdown",e=>{tgt=e.target.closest(".msg");if(!tgt)return;sx=e.clientX;sy=e.clientY;dx=0;sw=false;const m=tgt;
+  lp=setTimeout(()=>{vib(30);menu.style.display="block";menu.style.left=Math.min(e.clientX,innerWidth-150)+"px";menu.style.top=Math.min(e.clientY,innerHeight-160)+"px";menu._m=m;tgt=null},450)});
+list.addEventListener("pointermove",e=>{if(!tgt)return;dx=e.clientX-sx;const dy=Math.abs(e.clientY-sy);if(dy>10||Math.abs(dx)>10)clearTimeout(lp);
+  if(dx>0&&dx>dy){sw=true;tgt.style.transition="none";tgt.style.transform=`translateX(${Math.min(dx,90)}px)`}});
+const endSw=()=>{clearTimeout(lp);if(!tgt)return;tgt.style.transition="transform .3s cubic-bezier(.2,.9,.3,1.3)";tgt.style.transform="";if(sw&&dx>60){vib(15);setReply(tgt)}tgt=null};
+list.addEventListener("pointerup",endSw);list.addEventListener("pointercancel",endSw);
+menu.onclick=e=>{const a=e.target.dataset.a,m=menu._m;menu.style.display="none";if(!a||!m)return;
+  if(a==="re")setReply(m);if(a==="cp"&&navigator.clipboard)navigator.clipboard.writeText(m.dataset.txt).catch(()=>{});if(a==="del")m.remove()};
+document.addEventListener("pointerdown",e=>{if(!menu.contains(e.target))menu.style.display="none"},true);
+// Pull-to-refresh with inertia: rotates session keys (fresh ephemeral ECDH pair = forward secrecy)
+let py=null;const ptr=$("#ptr");
+list.addEventListener("touchstart",e=>{py=list.scrollTop<=0?e.touches[0].clientY:null},{passive:true});
+list.addEventListener("touchmove",e=>{if(py==null)return;const d=e.touches[0].clientY-py;if(d>0){ptr.style.transition="none";ptr.style.height=Math.min(d*.4,60)+"px"}},{passive:true});
+list.addEventListener("touchend",async()=>{if(py==null)return;const go=parseFloat(ptr.style.height)>=48;ptr.style.transition="height .35s cubic-bezier(.2,.9,.3,1.2)";ptr.style.height=0;py=null;
+  if(go&&S.psk){vib(20);S.pair=await C.newPair();S.mine=b64(await C.pubRaw(S.pair.publicKey));sendHello(true);toast("New session keys")}});
+
+/* ---------- send paths ---------- */
+async function sendText(){const v=$("#txt").value.trim();if(!v)return;const re=S.re&&S.re.text;
+  if(await tx({k:"t",text:v,re,who:S.name})){bubble({me:true,who:"You",body:v,re});$("#txt").value="";$("#rx2").onclick();vib(10)}}
+$("#send").onclick=sendText;$("#txt").onkeydown=e=>{if(e.key==="Enter")sendText()};
+// Images: downscale to 1024 px JPEG, split into 24 KB shards, each shard encrypted separately
+$("#att").onclick=()=>$("#file").click();
+$("#file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f||!S.key)return S.key?0:toast("Waiting for a verified peer");
+  try{const b=await createImageBitmap(f),k=Math.min(1,1024/Math.max(b.width,b.height)),c=el("canvas");c.width=b.width*k;c.height=b.height*k;c.getContext("2d").drawImage(b,0,0,c.width,c.height);
+    const url=c.toDataURL("image/jpeg",.7),iid=rnd(),sz=24000,of=Math.ceil(url.length/sz);
+    for(let n=0;n<of;n++)await tx({k:"i",iid,n,of,d:url.slice(n*sz,(n+1)*sz)});
+    const im=el("img");im.src=url;bubble({me:true,who:"You",body:im})}catch{toast("Couldn’t read that image")}};
+
+/* ---------- 4. GPS telemetry: encrypted fixes, haversine distance, initial bearing ---------- */
+const G={w:null,me:null,peer:null};
+const R=Math.PI/180,hav=(a,b)=>{const dl=(b.lat-a.lat)*R,dn=(b.lon-a.lon)*R,x=Math.sin(dl/2)**2+Math.cos(a.lat*R)*Math.cos(b.lat*R)*Math.sin(dn/2)**2;return 12742000*Math.asin(Math.sqrt(x))};
+const brg=(a,b)=>{const y=Math.sin((b.lon-a.lon)*R)*Math.cos(b.lat*R),x=Math.cos(a.lat*R)*Math.sin(b.lat*R)-Math.sin(a.lat*R)*Math.cos(b.lat*R)*Math.cos((b.lon-a.lon)*R);return(Math.atan2(y,x)/R+360)%360};
+function gpsUi(){const c=$("#gpsc");if(!G.me||!G.peer)return;const d=hav(G.me,G.peer),b=brg(G.me,G.peer);
+  c.style.display="block";c.textContent=(d<1000?Math.round(d)+" m":(d/1000).toFixed(2)+" km")+" "+["N","NE","E","SE","S","SW","W","NW"][Math.round(b/45)%8]}
+$("#gps").onclick=()=>{if(G.w!=null){navigator.geolocation.clearWatch(G.w);G.w=null;$("#gps").classList.remove("on");return}
+  if(!navigator.geolocation)return toast("Location isn’t available here");
+  G.w=navigator.geolocation.watchPosition(p=>{G.me={lat:p.coords.latitude,lon:p.coords.longitude};tx({k:"g",...G.me,acc:p.coords.accuracy});gpsUi()},
+    ()=>{toast("Location blocked. Allow access to share.");G.w=null;$("#gps").classList.remove("on")},{enableHighAccuracy:true,maximumAge:1000});
+  $("#gps").classList.add("on");vib(15)};
+
+/* ---------- receive pipeline ---------- */
+const buf={};let rxT;
+const led=()=>{$("#rx").classList.add("on");clearTimeout(rxT);rxT=setTimeout(()=>$("#rx").classList.remove("on"),1200)};
+async function onRaw(m){if(m.t==="hello")return onHello(m);if(m.t!=="m"||!S.key)return;
+  let p;try{p=await C.open(S.key,m)}catch{return}                    // wrong key or tampered ciphertext: GCM rejects, we drop silently
+  const b=buf[p.sid||p.iid]=buf[p.sid||p.iid]||{c:{},end:null};
+  if(p.k==="t"){bubble({who:p.who||"Peer",body:p.text,re:p.re});vib([40,30,40])}
+  else if(p.k==="g"){G.peer={lat:p.lat,lon:p.lon};gpsUi()}
+  else if(p.k==="a"||p.k==="ae"){led();if(p.k==="a"){b.c[p.n]=p.d;b.mime=p.mime}else b.end=p.n;
+    if(b.end!=null&&Object.keys(b.c).length===b.end){const parts=Array.from({length:b.end},(_,i)=>unb64(b.c[i]));delete buf[p.sid];
+      const au=el("audio");au.controls=true;au.src=URL.createObjectURL(new Blob(parts,{type:b.mime}));bubble({who:"Peer",body:au});
+      A.init();A.squelch();au.play().then(()=>au.onended=()=>A.roger()).catch(()=>{})}}
+  else if(p.k==="i"){b.c[p.n]=p.d;if(Object.keys(b.c).length===p.of){const im=el("img");im.src=Array.from({length:p.of},(_,i)=>b.c[i]).join("");delete buf[p.iid];bubble({who:"Peer",body:im})}}}
+
+/* ---------- 5. Join flow + PWA manifest ---------- */
+try{const mf=new Blob([JSON.stringify({name:"Relay",short_name:"Relay",display:"standalone",background_color:"#20251b",theme_color:"#20251b",start_url:"."})],{type:"application/manifest+json"});
+  const l=el("link");l.rel="manifest";l.href=URL.createObjectURL(mf);document.head.append(l)}catch{}
+const CFG={url:"",key:""};   // optional: paste your Supabase URL and anon key here before hosting so nobody has to type them
+try{const c=JSON.parse(localStorage.getItem("relay.cfg")||"{}"),h=location.hash.match(/room=([^&]+)/);$("#surl").value=c.url||"";$("#skey").value=c.key||"";$("#call").value=c.call||"";$("#room").value=h?decodeURIComponent(h[1]):(c.room||"")}catch{}
+$("#inv").onclick=()=>{const u=location.href.split("#")[0]+"#room="+encodeURIComponent(S.room||"");navigator.clipboard?navigator.clipboard.writeText(u).then(()=>toast("Invite copied. Share the passphrase in person.")).catch(()=>toast(u)):toast(u)};
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});   // offline shell when hosted over HTTPS
+$("#go").onclick=async()=>{const room=$("#room").value.trim(),pass=$("#pass").value;
+  if(!room||pass.length<6)return toast("Enter a channel and a passphrase of 6+ characters");
+  $("#go").textContent="Deriving keys…";A.init();
+  try{S.name=$("#call").value.trim()||"Unit";S.psk=await C.psk(pass,room);S.pair=await C.newPair();S.mine=b64(await C.pubRaw(S.pair.publicKey));
+    S.room=room;const url=$("#surl").value.trim()||CFG.url,key=$("#skey").value.trim()||CFG.key,tp=await topic(room);
+    T=url&&key?await supa(url,key,tp):bcast(tp);
+    try{localStorage.setItem("relay.cfg",JSON.stringify({url,key,call:S.name,room}))}catch{}   // passphrase is never stored
+    T.on(onRaw);$("#setup").style.display="none";status("Waiting for a peer on this channel…");sendHello(true);
+    const iv=setInterval(()=>{if(S.key)clearInterval(iv);else sendHello(true)},4000)}   // keep knocking until a verified peer answers
+  catch(e){$("#go").textContent="Join channel";toast("Couldn’t connect: "+(e.message||"relay unreachable"))}};
+</script></body></html>
